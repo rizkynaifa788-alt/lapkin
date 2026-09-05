@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Kinerja Harian - MIN 1 Kotawaringin Timur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Menambahkan FileSaver.js untuk membantu menyimpan file -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- Menambahkan docx untuk generate word file -->
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    
+    <style>
+        @media print {
+            body {
+                background-color: white !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-container {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            @page {
+                size: A4;
+                margin: 1.5cm;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+        }
+        
+        /* Table Border Styles for better visual matching with the image */
+        .report-table th, .report-table td {
+            border: 1px solid black;
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+        .report-table th {
+            text-align: center;
+            font-weight: bold;
+            background-color: #f3f4f6; /* Light gray background for headers */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8 font-sans">
+
+    <!-- Toast Container (Notifikasi) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 no-print"></div>
+
+    <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6">
+        
+        <!-- Input Form Section (no-print) -->
+        <div class="w-full lg:w-1/3 bg-white p-6 rounded-lg shadow-md no-print flex flex-col h-fit">
+            <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-800">Form Input Data</h2>
+            
+            <form id="dataForm" class="space-y-4">
+                <!-- Data Pegawai -->
+                <div class="space-y-2">
+                    <h3 class="font-semibold text-gray-700 bg-gray-50 p-2 rounded">Identitas Pegawai</h3>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nama</label>
+                        <input type="text" id="nama" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" value="SUWITNO, S.Pd.SD.">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">NIP</label>
+                        <input type="text" id="nip" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" value="197002281995031003">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <textarea id="jabatan" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm">Guru Ahli Muda, Guru Kelas, pada MIN 1 Kotawaringin Timur Kabupaten Kotawaringin Timur Provinsi Kalimantan Tengah</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Bulan/Tahun</label>
+                        <input type="text" id="bulanTahun" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" value="Desember 2025">
+                    </div>
+                </div>
+
+                <!-- Input Kegiatan Baru -->
+                <div class="space-y-2 mt-6">
+                    <h3 class="font-semibold text-gray-700 bg-gray-50 p-2 rounded flex justify-between items-center">
+                        Tambah Kegiatan
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Hari, Tanggal</label>
+                            <input type="text" id="hariTanggal" placeholder="Contoh: Senin, 01/12/2025" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Kegiatan</label>
+                            <textarea id="kegiatan" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"></textarea>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Output/ Hasil/ Bukti Dokumen</label>
+                            <textarea id="output" rows="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Volume</label>
+                            <input type="number" id="volume" value="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Satuan</label>
+                            <select id="satuan" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm">
+                                <option value="Kegiatan">Kegiatan</option>
+                                <option value="Dokumen">Dokumen</option>
+                                <option value="Laporan">Laporan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" onclick="tambahKegiatan()" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                        Tambah ke Tabel
+                    </button>
+                </div>
+                
+                <!-- Data Penandatangan -->
+                 <div class="space-y-2 mt-6">
+                    <h3 class="font-semibold text-gray-700 bg-gray-50 p-2 rounded">Tanda Tangan</h3>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Tanggal TTD (Kanan Bawah)</label>
+                        <input type="text" id="tglTtd" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" value="31 Desember 2025">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nama Atasan (Kiri Bawah)</label>
+                        <input type="text" id="namaAtasan" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" value="Drs. MALI, M.Pd">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">NIP Atasan</label>
+                        <input type="text" id="nipAtasan" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 text-sm" value="196701161998031002">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-8 space-y-3 pt-4 border-t">
+                    <button type="button" onclick="window.print()" class="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Print Laporan
+                    </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="exportExcel()" class="flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-sm">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Export Excel
+                        </button>
+                        <button type="button" onclick="exportWord()" class="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-sm">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Export Word
+                        </button>
+                    </div>
+                     <button type="button" onclick="loadDummyData()" class="w-full text-gray-500 hover:text-gray-700 text-xs mt-2 underline">
+                        Muat Data Contoh (Seperti Gambar)
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Report Preview Section (This will be printed) -->
+        <div class="w-full lg:w-2/3 bg-white p-8 rounded-lg shadow-lg print-container overflow-x-auto" id="reportDocument">
+            
+            <!-- Document Header -->
+            <div class="text-center mb-6">
+                <h1 class="text-[16px] font-bold leading-tight">Laporan Capaian Kinerja Harian Pegawai Negeri Sipil</h1>
+                <h1 class="text-[16px] font-bold leading-tight">Kantor Kementerian Agama Kab. Kotawaringin Timur</h1>
+            </div>
+
+            <!-- Employee Info -->
+            <div class="mb-4 text-sm font-serif">
+                <table class="w-full max-w-3xl">
+                    <tr>
+                        <td class="w-32 align-top py-0.5">Nama</td>
+                        <td class="w-2 align-top py-0.5">:</td>
+                        <td class="align-top py-0.5"><span id="previewNama">SUWITNO, S.Pd.SD.</span></td>
+                    </tr>
+                    <tr>
+                        <td class="align-top py-0.5">NIP</td>
+                        <td class="align-top py-0.5">:</td>
+                        <td class="align-top py-0.5"><span id="previewNip">197002281995031003</span></td>
+                    </tr>
+                    <tr>
+                        <td class="align-top py-0.5">Jabatan</td>
+                        <td class="align-top py-0.5">:</td>
+                        <td class="align-top py-0.5 text-justify"><span id="previewJabatan">Guru Ahli Muda, Guru Kelas, pada MIN 1 Kotawaringin Timur Kabupaten Kotawaringin Timur Provinsi Kalimantan Tengah</span></td>
+                    </tr>
+                    <tr>
+                        <td class="align-top py-0.5">Bulan/Tahun</td>
+                        <td class="align-top py-0.5">:</td>
+                        <td class="align-top py-0.5"><span id="previewBulanTahun">Desember 2025</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Data Table -->
+            <table class="w-full border-collapse report-table mb-8" id="kinerjaTable">
+                <thead>
+                    <tr>
+                        <th class="w-8">No.</th>
+                        <th class="w-32">Hari, Tanggal</th>
+                        <th>Kegiatan</th>
+                        <th class="w-40">Output/ Hasil/<br>Bukti Dokumen</th>
+                        <th class="w-16">Volume</th>
+                        <th class="w-20">Satuan</th>
+                        <th class="w-16 no-print text-red-500">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Data rows will be injected here -->
+                </tbody>
+            </table>
+
+            <!-- Signatures -->
+            <div class="flex justify-between mt-12 text-sm font-serif px-8">
+                <!-- Atasan (Kiri) -->
+                <div class="text-center w-64 relative">
+                    <p class="mb-1">Mengetahui,</p>
+                    <p class="mb-16">Atasan Langsung</p>
+                    
+                    <!-- Fake Stamp Placeholder (for visual similarity) -->
+                    <div class="absolute left-0 top-10 opacity-20 no-print pointer-events-none" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #1e3a8a; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg);">
+                         <span class="text-[10px] font-bold text-[#1e3a8a] text-center">KEMENTERIAN AGAMA<br>KAB KOTIM</span>
+                    </div>
+
+                    <p class="font-bold underline uppercase"><span id="previewNamaAtasan">Drs. MALI, M.Pd</span></p>
+                    <p>NIP. <span id="previewNipAtasan">196701161998031002</span></p>
+                </div>
+
+                <!-- Pegawai (Kanan) -->
+                <div class="text-center w-64">
+                    <p class="mb-1 text-transparent">.</p> <!-- Spacer to align dates -->
+                    <p class="mb-16"><span id="previewTglTtd">31 Desember 2025</span><br>Pegawai</p>
+                    <p class="font-bold underline uppercase"><span id="previewNamaBawah">SUWITNO, S.Pd.SD.</span></p>
+                    <p>NIP. <span id="previewNipBawah">197002281995031003</span></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Array to store activities
+        let activities = [];
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : (type === 'success' ? 'bg-green-600' : 'bg-blue-500');
+            toast.className = `${bgColor} text-white px-4 py-3 rounded shadow-lg transition-opacity duration-300 opacity-0 flex items-center z-50`;
+            toast.innerHTML = `<span class="text-sm font-medium">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Fade in
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0');
+            });
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => { 
+                    if (container.contains(toast)) container.removeChild(toast); 
+                }, 300);
+            }, 3000);
+        }
+
+        // Function to update preview headers when input changes
+        function setupLivePreview() {
+            const mappings = {
+                'nama': ['previewNama', 'previewNamaBawah'],
+                'nip': ['previewNip', 'previewNipBawah'],
+                'jabatan': ['previewJabatan'],
+                'bulanTahun': ['previewBulanTahun'],
+                'tglTtd': ['previewTglTtd'],
+                'namaAtasan': ['previewNamaAtasan'],
+                'nipAtasan': ['previewNipAtasan']
+            };
+
+            for (const [inputId, targetIds] of Object.entries(mappings)) {
+                document.getElementById(inputId).addEventListener('input', function(e) {
+                    targetIds.forEach(targetId => {
+                        document.getElementById(targetId).textContent = e.target.value;
+                    });
+                });
+            }
+        }
+
+        // Initialize empty table on load
+        function init() {
+            setupLivePreview();
+            renderTable();
+        }
+
+        function tambahKegiatan() {
+            const hariTanggal = document.getElementById('hariTanggal').value;
+            const kegiatan = document.getElementById('kegiatan').value;
+            const output = document.getElementById('output').value;
+            const volume = document.getElementById('volume').value;
+            const satuan = document.getElementById('satuan').value;
+
+            if (!kegiatan) {
+                showToast("Kolom Kegiatan wajib diisi!", "error");
+                return;
+            }
+
+            activities.push({
+                hariTanggal: hariTanggal,
+                kegiatan: kegiatan,
+                output: output,
+                volume: volume,
+                satuan: satuan
+            });
+
+            // Clear input fields
+            document.getElementById('hariTanggal').value = '';
+            document.getElementById('kegiatan').value = '';
+            document.getElementById('output').value = '';
+            document.getElementById('volume').value = '1';
+            
+            renderTable();
+        }
+
+        function hapusKegiatan(index) {
+            activities.splice(index, 1);
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if (activities.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-500 italic py-4">Belum ada data kegiatan. Silakan tambah melalui form di samping.</td></tr>`;
+                return;
+            }
+
+            activities.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                
+                // Allow inline editing by using contenteditable in preview
+                tr.innerHTML = `
+                    <td class="text-center">${index + 1}</td>
+                    <td contenteditable="true" onblur="updateData(${index}, 'hariTanggal', this.innerText)">${item.hariTanggal}</td>
+                    <td contenteditable="true" onblur="updateData(${index}, 'kegiatan', this.innerText)" class="text-justify">${item.kegiatan}</td>
+                    <td contenteditable="true" onblur="updateData(${index}, 'output', this.innerText)" class="text-center">${item.output}</td>
+                    <td contenteditable="true" onblur="updateData(${index}, 'volume', this.innerText)" class="text-center">${item.volume}</td>
+                    <td contenteditable="true" onblur="updateData(${index}, 'satuan', this.innerText)" class="text-center">${item.satuan}</td>
+                    <td class="text-center no-print">
+                        <button onclick="hapusKegiatan(${index})" class="text-red-500 hover:text-red-700 bg-red-100 hover:bg-red-200 px-2 py-1 rounded text-xs">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Helper to handle inline edits in table
+        window.updateData = function(index, field, value) {
+            if(activities[index]) {
+                activities[index][field] = value;
+            }
+        }
+
+        function exportExcel() {
+            if(activities.length === 0) {
+                showToast("Tidak ada data untuk diexport", "error");
+                return;
+            }
+
+            try {
+                showToast("Memproses Excel...", "info");
+                const nama = document.getElementById('nama').value;
+                const wb = XLSX.utils.book_new();
+                
+                // Format data for excel
+                const excelData = activities.map((item, index) => ({
+                    'No.': index + 1,
+                    'Hari, Tanggal': item.hariTanggal,
+                    'Kegiatan': item.kegiatan,
+                    'Output/ Hasil/ Bukti Dokumen': item.output,
+                    'Volume': item.volume,
+                    'Satuan': item.satuan
+                }));
+
+                // Create Worksheet
+                const ws = XLSX.utils.json_to_sheet(excelData, { origin: "A7" });
+
+                // Add Header Info to worksheet
+                XLSX.utils.sheet_add_aoa(ws, [
+                    ["Laporan Capaian Kinerja Harian Pegawai Negeri Sipil"],
+                    ["Kantor Kementerian Agama Kab. Kotawaringin Timur"],
+                    [],
+                    ["Nama", ": " + nama],
+                    ["NIP", ": " + document.getElementById('nip').value],
+                    ["Bulan/Tahun", ": " + document.getElementById('bulanTahun').value]
+                ], { origin: "A1" });
+
+                // Adjust column widths
+                ws['!cols'] = [
+                    { wch: 5 },  // No
+                    { wch: 20 }, // Hari
+                    { wch: 50 }, // Kegiatan
+                    { wch: 30 }, // Output
+                    { wch: 10 }, // Vol
+                    { wch: 15 }  // Satuan
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, "Laporan_Kinerja");
+                
+                // Generate file
+                XLSX.writeFile(wb, `Laporan_Kinerja_${nama.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.xlsx`);
+                showToast("Berhasil mendownload Excel!", "success");
+            } catch (error) {
+                console.error(error);
+                showToast("Gagal export Excel: " + error.message, "error");
+            }
+        }
+
+        function exportWord() {
+            if (activities.length === 0) {
+                showToast("Tidak ada data untuk diexport", "error");
+                return;
+            }
+
+            try {
+                showToast("Memproses Word...", "info");
+                // Destructure docx object classes
+            const nipAtasan = document.getElementById('nipAtasan').value;
+
+            // Helper for creating aligned info rows in Word, moved inside to access Paragraph and TextRun
+            function createLocalInfoRow(label, value, style, spacing = {}) {
+                return [
+                    new Paragraph({
+                        spacing: spacing,
+                        children: [
+                            new TextRun({ text: label.padEnd(20, ' '), ...style }),
+                            new TextRun({ text: value, ...style }),
+                        ]
+                    })
+                ];
+            }
+
+            // Header Style
+            const headerStyle = {
+                bold: true,
+                size: 24, // 12pt
+                font: "Times New Roman"
+            };
+            
+            const normalStyle = {
+                size: 22, // 11pt
+                font: "Times New Roman"
+            };
+
+            // Helper to create table borders
+            const borderConfig = {
+                style: BorderStyle.SINGLE,
+                size: 1,
+                color: "000000"
+            };
+            const tableBorders = {
+                top: borderConfig, bottom: borderConfig, left: borderConfig, right: borderConfig,
+                insideHorizontal: borderConfig, insideVertical: borderConfig
+            };
+
+            // Create Table Header Row
+            const tableHeader = new TableRow({
+                tableHeader: true,
+                children: [
+                    new TableCell({ children: [new Paragraph({ text: "No.", alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+                    new TableCell({ children: [new Paragraph({ text: "Hari, Tanggal", alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+                    new TableCell({ children: [new Paragraph({ text: "Kegiatan", alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+                    new TableCell({ children: [new Paragraph({ text: "Output/ Hasil/ Bukti Dokumen", alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+                    new TableCell({ children: [new Paragraph({ text: "Volume", alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+                    new TableCell({ children: [new Paragraph({ text: "Satuan", alignment: AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER }),
+                ],
+            });
+
+            // Create Data Rows
+            const tableRows = activities.map((item, index) => {
+                return new TableRow({
+                    children: [
+                        new TableCell({ children: [new Paragraph({ text: (index + 1).toString(), alignment: AlignmentType.CENTER })] }),
+                        new TableCell({ children: [new Paragraph({ text: item.hariTanggal })] }),
+                        new TableCell({ children: [new Paragraph({ text: item.kegiatan, alignment: AlignmentType.JUSTIFIED })] }),
+                        new TableCell({ children: [new Paragraph({ text: item.output, alignment: AlignmentType.CENTER })] }),
+                        new TableCell({ children: [new Paragraph({ text: item.volume.toString(), alignment: AlignmentType.CENTER })] }),
+                        new TableCell({ children: [new Paragraph({ text: item.satuan, alignment: AlignmentType.CENTER })] }),
+                    ]
+                });
+            });
+
+            // Construct Document
+            const doc = new Document({
+                sections: [{
+                    properties: {
+                        page: {
+                            margin: { top: 1000, right: 1000, bottom: 1000, left: 1000 }
+                        }
+                    },
+                    children: [
+                        // Title
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [new TextRun({ text: "Laporan Capaian Kinerja Harian Pegawai Negeri Sipil", ...headerStyle })],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { after: 400 },
+                            children: [new TextRun({ text: "Kantor Kementerian Agama Kab. Kotawaringin Timur", ...headerStyle })],
+                        }),
+
+                        // Info Pegawai
+                        ...createLocalInfoRow("Nama", ": " + nama, normalStyle),
+                        ...createLocalInfoRow("NIP", ": " + nip, normalStyle),
+                        ...createLocalInfoRow("Jabatan", ": " + jabatan, normalStyle),
+                        ...createLocalInfoRow("Bulan/Tahun", ": " + bulanTahun, normalStyle, { after: 200 }),
+
+                        // The Table
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            borders: tableBorders,
+                            rows: [tableHeader, ...tableRows],
+                        }),
+
+                        // Signatures
+                        new Paragraph({ spacing: { before: 800 } }), // Spacer
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            borders: { top: {style: BorderStyle.NONE}, bottom: {style: BorderStyle.NONE}, left: {style: BorderStyle.NONE}, right: {style: BorderStyle.NONE}, insideVertical: {style: BorderStyle.NONE}, insideHorizontal: {style: BorderStyle.NONE} },
+                            rows: [
+                                new TableRow({
+                                    children: [
+                                        new TableCell({
+                                            width: { size: 50, type: WidthType.PERCENTAGE },
+                                            children: [
+                                                new Paragraph({ text: "Mengetahui,", alignment: AlignmentType.CENTER }),
+                                                new Paragraph({ text: "Atasan Langsung", alignment: AlignmentType.CENTER }),
+                                                new Paragraph({ text: "", spacing: { before: 1200 } }), // Signature space
+                                                new Paragraph({ children: [new TextRun({ text: namaAtasan, bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+                                                new Paragraph({ text: `NIP. ${nipAtasan}`, alignment: AlignmentType.CENTER }),
+                                            ]
+                                        }),
+                                        new TableCell({
+                                            width: { size: 50, type: WidthType.PERCENTAGE },
+                                            children: [
+                                                new Paragraph({ text: tglTtd, alignment: AlignmentType.CENTER }),
+                                                new Paragraph({ text: "Pegawai", alignment: AlignmentType.CENTER }),
+                                                new Paragraph({ text: "", spacing: { before: 1200 } }), // Signature space
+                                                new Paragraph({ children: [new TextRun({ text: nama, bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+                                                new Paragraph({ text: `NIP. ${nip}`, alignment: AlignmentType.CENTER }),
+                                            ]
+                                        })
+                                    ]
+                                })
+                            ]
+                        })
+                    ]
+                }]
+            });
+
+            // Generate and save document
+            Packer.toBlob(doc).then(blob => {
+                saveAs(blob, `Laporan_Kinerja_${nama.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.docx`);
+                showToast("Berhasil mendownload Word!", "success");
+            }).catch(error => {
+                console.error(error);
+                showToast("Gagal memproses file Word: " + error.message, "error");
+            });
+            
+            } catch (error) {
+                console.error(error);
+                showToast("Gagal menyiapkan Word: " + error.message, "error");
+            }
+        }
+
+        function loadDummyData() {
+            activities = [
+                {hariTanggal: "Senin, 01/12/2025", kegiatan: "Proktor pelaksanaan Asesmen sumatif semester Ganjil, mapel Al-Quran Hadis dan PKn. Hari pertama.", output: "Asesmen Sumatif Ganjil", volume: "2", satuan: "Kegiatan"},
+                {hariTanggal: "Senin, 01/12/2025", kegiatan: "Mengoreksi dan download nilai hasil Asesmen sumatif semester 1 pada CBT kelas 6.", output: "Nilai Asesmen sumatif semester ganjil kelas 6", volume: "2", satuan: "Dokumen"},
+                {hariTanggal: "Selasa, 02/12/2025", kegiatan: "Proktor pelaksanaan Asesmen sumatif semester Ganjil, mapel Akidah Akhlak dan B.Indonesia.", output: "Asesmen Sumatif Ganjil", volume: "2", satuan: "Kegiatan"},
+                {hariTanggal: "Selasa, 02/12/2025", kegiatan: "Mengoreksi dan download nilai hasil Asesmen sumatif semester 1 pada CBT kelas 6.", output: "Nilai Asesmen sumatif semester ganjil kelas 6", volume: "2", satuan: "Dokumen"},
+                {hariTanggal: "Rabu, 03/12/2025", kegiatan: "Proktor pelaksanaan Asesmen sumatif semester Ganjil, mapel Matematika dan Fiqih.", output: "Asesmen Sumatif Ganjil", volume: "2", satuan: "Kegiatan"},
+                {hariTanggal: "Rabu, 03/12/2025", kegiatan: "Mengoreksi dan download nilai hasil Asesmen sumatif semester 1 pada CBT kelas 6.", output: "Nilai Asesmen Sumatif Semester Ganjil kelas 6", volume: "2", satuan: "Dokumen"},
+                {hariTanggal: "Kamis, 04/12/2025", kegiatan: "Proktor pelaksanaan Asesmen sumatif semester Ganjil, mapel B. Arab dan SBdP.", output: "Asesmen Sumatif Ganjil", volume: "2", satuan: "Kegiatan"},
+                {hariTanggal: "Kamis, 04/12/2025", kegiatan: "Mengoreksi dan download nilai hasil Asesmen sumatif semester 1 pada CBT kelas 6.", output: "Nilai Asesmen Sumatif Semester Ganjil kelas 6", volume: "2", satuan: "Dokumen"}
+            ];
+            renderTable();
+        }
+
+        // Run on load
+        window.onload = init;
+
+    </script>
+</body>
+</html>
